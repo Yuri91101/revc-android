@@ -1,23 +1,40 @@
-name: C/C++ CI
+name: Android WAF Build and Artifact
 
 on:
   push:
-    branches: [ "master" ]
+    branches:
+      - main
   pull_request:
-    branches: [ "master" ]
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
-  build:
-
+  build_armeabi-v7a:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
-    - name: configure
-      run: ./waf configure -T release --android=armeabi-v7a,,21
-    - name: make
-      run: make
-    - name: make check
-      run: make check
-    - name: make distcheck
-      run: make distcheck
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Install Android SDK
+      uses: android-actions/setup-android@v3
+      with:
+        packages: "build-tools;30.0.3 platforms;android-30"
+
+    - name: Configure and build with WAF (armeabi-v7a)
+      run: |
+        ./waf configure -T release --android=armeabi-v7a,,21
+        ./waf build
+    - name: Upload build directory as an artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: revc-android-armeabi-v7a-build
+        path: ./*
